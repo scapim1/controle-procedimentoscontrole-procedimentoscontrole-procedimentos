@@ -1,0 +1,1288 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Controle de Procedimentos Policiais</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+            padding: 25px;
+            background: #f8f9fa;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            border-left: 5px solid;
+            transition: transform 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-3px);
+        }
+
+        .stat-card.total { border-left-color: #3498db; }
+        .stat-card.em-andamento { border-left-color: #f39c12; }
+        .stat-card.relatado { border-left-color: #27ae60; }
+        .stat-card.pendente { border-left-color: #e74c3c; }
+        .stat-card.finalizado { border-left-color: #9b59b6; }
+
+        .stat-number {
+            font-size: 2.2em;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .stat-card.total .stat-number { color: #3498db; }
+        .stat-card.em-andamento .stat-number { color: #f39c12; }
+        .stat-card.relatado .stat-number { color: #27ae60; }
+        .stat-card.pendente .stat-number { color: #e74c3c; }
+        .stat-card.finalizado .stat-number { color: #9b59b6; }
+
+        .main-content {
+            padding: 30px;
+        }
+
+        .tabs {
+            display: flex;
+            border-bottom: 3px solid #ecf0f1;
+            margin-bottom: 25px;
+            overflow-x: auto;
+        }
+
+        .tab {
+            padding: 15px 25px;
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-size: 14px;
+            font-weight: bold;
+            color: #7f8c8d;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .tab.active {
+            color: #2c3e50;
+            border-bottom-color: #3498db;
+            background: #ecf0f1;
+        }
+
+        .tab:hover {
+            color: #2c3e50;
+            background: #f8f9fa;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+
+        .btn-primary {
+            background: #3498db;
+            color: white;
+        }
+
+        .btn-success {
+            background: #27ae60;
+            color: white;
+        }
+
+        .btn-info {
+            background: #17a2b8;
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            opacity: 0.9;
+        }
+
+        .search-box {
+            flex: 1;
+            max-width: 300px;
+            padding: 12px 18px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .search-box:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+
+        .filter-select {
+            padding: 12px 18px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            background: white;
+        }
+
+        .table-container {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            background: #34495e;
+            color: white;
+            padding: 15px 10px;
+            text-align: left;
+            font-weight: bold;
+            font-size: 13px;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        td {
+            padding: 12px 10px;
+            border-bottom: 1px solid #eee;
+            font-size: 13px;
+        }
+
+        tr:hover {
+            background: #f8f9fa;
+        }
+
+        .status {
+            padding: 4px 8px;
+            border-radius: 15px;
+            font-size: 11px;
+            font-weight: bold;
+            text-align: center;
+            white-space: nowrap;
+        }
+
+        .status.em-andamento {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status.relatado {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status.pendente-de-despacho {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .status.cota {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .status.finalizado {
+            background: #e2e3e5;
+            color: #383d41;
+        }
+
+        .status.instaurado {
+            background: #f0e9ff;
+            color: #6f42c1;
+        }
+
+        .status.distribuido {
+            background: #cff4fc;
+            color: #055160;
+        }
+
+        .tipo {
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .tipo.ipl {
+            background: #3498db;
+            color: white;
+        }
+
+        .tipo.rdf {
+            background: #e67e22;
+            color: white;
+        }
+
+        .tipo.re {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .tipo.ncv {
+            background: #9b59b6;
+            color: white;
+        }
+
+        .tipo.flagrante {
+            background: #ff6b6b;
+            color: white;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: white;
+            width: 95%;
+            max-width: 800px;
+            margin: 30px auto;
+            border-radius: 15px;
+            overflow: hidden;
+            animation: modalAppear 0.3s ease;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        @keyframes modalAppear {
+            from { opacity: 0; transform: translateY(-50px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .modal-header {
+            background: #34495e;
+            color: white;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-body {
+            padding: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: bold;
+            color: #333;
+            font-size: 14px;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .form-group textarea {
+            height: 80px;
+            resize: vertical;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .close {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        .actions {
+            text-align: center;
+            margin-top: 25px;
+        }
+
+        .btn-edit {
+            background: #f39c12;
+            color: white;
+            padding: 6px 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 5px;
+            font-size: 11px;
+        }
+
+        .btn-delete {
+            background: #e74c3c;
+            color: white;
+            padding: 6px 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+        }
+
+        .alert {
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+
+        .alert.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert.warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+
+        .editable {
+            cursor: pointer;
+            position: relative;
+            padding: 8px;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+        }
+
+        .editable:hover {
+            background-color: #f0f8ff;
+            border: 1px dashed #3498db;
+        }
+
+        .editable.editing {
+            background-color: #fff;
+            border: 2px solid #3498db;
+        }
+
+        .inline-select {
+            width: 100%;
+            padding: 4px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: white;
+            font-size: 12px;
+        }
+
+        .inline-input {
+            width: 100%;
+            padding: 4px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: white;
+            font-size: 12px;
+        }
+
+        .save-btn {
+            background: #27ae60;
+            color: white;
+            border: none;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 10px;
+            cursor: pointer;
+            margin-left: 5px;
+        }
+
+        .cancel-btn {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 10px;
+            cursor: pointer;
+            margin-left: 2px;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.8em;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .search-box {
+                max-width: none;
+            }
+            
+            .table-container {
+                overflow-x: auto;
+            }
+            
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            th, td {
+                padding: 8px 6px;
+                font-size: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚔 Controle de Procedimentos Policiais</h1>
+            <p>Sistema de Gerenciamento de IPLs, RDFs, REs e NCVs</p>
+        </div>
+
+        <div class="stats">
+            <div class="stat-card total">
+                <div class="stat-number" id="totalCount">0</div>
+                <div>Total</div>
+            </div>
+            <div class="stat-card em-andamento">
+                <div class="stat-number" id="emAndamentoCount">0</div>
+                <div>Em Andamento</div>
+            </div>
+            <div class="stat-card relatado">
+                <div class="stat-number" id="relatadoCount">0</div>
+                <div>Relatado</div>
+            </div>
+            <div class="stat-card pendente">
+                <div class="stat-number" id="pendenteCount">0</div>
+                <div>Pendente</div>
+            </div>
+            <div class="stat-card finalizado">
+                <div class="stat-number" id="finalizadoCount">0</div>
+                <div>Finalizado</div>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="controls">
+                <button class="btn btn-primary" onclick="openModal()">➕ Novo Procedimento</button>
+                <button class="btn btn-success" onclick="exportToExcel()">📊 Exportar Excel</button>
+                <button class="btn btn-secondary" onclick="copyToClipboard()">📋 Copiar Dados</button>
+                <input type="text" class="search-box" id="searchBox" placeholder="🔍 Buscar por número, PJE, delegacia, codinome...">
+                <select class="filter-select" id="tipoFilter">
+                    <option value="">Todos os Tipos</option>
+                    <option value="IPL">IPL</option>
+                    <option value="RDF">RDF</option>
+                    <option value="RE">RE</option>
+                    <option value="NCV">NCV</option>
+                    <option value="FLAGRANTE">FLAGRANTE</option>
+                </select>
+                <input type="text" class="filter-select" id="delegaciaFilter" placeholder="Filtrar por delegacia..." style="max-width: 200px;">
+            </div>
+
+            <div id="alertContainer"></div>
+
+            <div class="tabs">
+                <button class="tab active" onclick="showTab('todos', this)">📋 Todos</button>
+                <button class="tab" onclick="showTab('em-andamento', this)">🔄 Em Andamento</button>
+                <button class="tab" onclick="showTab('relatado', this)">✅ Relatado</button>
+                <button class="tab" onclick="showTab('pendente-de-despacho', this)">⏳ Pendente de Despacho</button>
+                <button class="tab" onclick="showTab('cota', this)">📝 Cota</button>
+                <button class="tab" onclick="showTab('finalizado', this)">🏁 Finalizado</button>
+                <button class="tab" onclick="showTab('instaurado', this)">🆕 Instaurado</button>
+                <button class="tab" onclick="showTab('distribuido', this)">📤 Distribuído</button>
+            </div>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Ano</th>
+                            <th>Status</th>
+                            <th>Tipo</th>
+                            <th>Nº do Caso</th>
+                            <th>PJE</th>
+                            <th>Delegacia</th>
+                            <th>Matéria</th>
+                            <th>Codinome</th>
+                            <th>Despacho</th>
+                            <th>Escrivão</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Procedimento -->
+    <div class="modal" id="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">Novo Procedimento</h3>
+                <button class="close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="procedimentoForm">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Ano</label>
+                            <input type="number" id="ano" min="2020" max="2030" value="2025" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Status</label>
+                            <select id="status" required>
+                                <option value="EM ANDAMENTO">EM ANDAMENTO</option>
+                                <option value="RELATADO">RELATADO</option>
+                                <option value="PENDENTE DE DESPACHO">PENDENTE DE DESPACHO</option>
+                                <option value="COTA">COTA</option>
+                                <option value="FINALIZADO">FINALIZADO</option>
+                                <option value="INSTAURADO">INSTAURADO</option>
+                                <option value="DISTRIBUÍDO">DISTRIBUÍDO</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Tipo</label>
+                            <select id="tipo" required>
+                                <option value="IPL">IPL</option>
+                                <option value="RDF">RDF</option>
+                                <option value="RE">RE</option>
+                                <option value="NCV">NCV</option>
+                                <option value="FLAGRANTE">FLAGRANTE</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Número do Caso</label>
+                            <input type="text" id="numeroCaso" required placeholder="Ex: 2025.0076494">
+                        </div>
+                        <div class="form-group">
+                            <label>PJE</label>
+                            <input type="text" id="pje" placeholder="Ex: 0800123-45.2025.4.01.3901">
+                        </div>
+                        <div class="form-group">
+                            <label>Delegacia</label>
+                            <input type="text" id="delegacia" required placeholder="Ex: DRE/SR/PA, DELEPATIDPRJ/SR/PF/PA..." list="delegaciaList">
+                            <datalist id="delegaciaList">
+                                <option value="DRE/SR/PA">
+                                <option value="DELEPATIDPRJ/SR/PF/PA">
+                                <option value="DPF/ATM/PA">
+                                <option value="1ª DP Centro">
+                                <option value="2ª DP Norte">
+                                <option value="3ª DP Sul">
+                                <option value="DENARC">
+                                <option value="DEIC">
+                                <option value="DHPP">
+                            </datalist>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Matéria</label>
+                            <select id="materia" required>
+                                <option value="">Selecione...</option>
+                                <option value="DROGA">DROGA</option>
+                                <option value="LICITAÇÃO E CONTRATOS">LICITAÇÃO E CONTRATOS</option>
+                                <option value="DOCUMENTO FALSO">DOCUMENTO FALSO</option>
+                                <option value="CRIME AMBIENTAL">CRIME AMBIENTAL</option>
+                                <option value="FURTO">FURTO</option>
+                                <option value="ROUBO">ROUBO</option>
+                                <option value="HOMICÍDIO">HOMICÍDIO</option>
+                                <option value="ESTELIONATO">ESTELIONATO</option>
+                                <option value="CORRUPÇÃO">CORRUPÇÃO</option>
+                                <option value="LESÃO CORPORAL">LESÃO CORPORAL</option>
+                                <option value="ESTUPRO">ESTUPRO</option>
+                                <option value="LAVAGEM DE DINHEIRO">LAVAGEM DE DINHEIRO</option>
+                                <option value="RECEPTAÇÃO">RECEPTAÇÃO</option>
+                                <option value="OUTROS">OUTROS</option>
+                            </select>
+                        </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Codinome</label>
+                            <input type="text" id="codinome" placeholder="Ex: Apreensão droga - Fiscalização Receita Federal">
+                        </div>
+                        <div class="form-group">
+                            <label>Escrivão</label>
+                            <select id="escrivao" required>
+                                <option value="">Selecione...</option>
+                                <option value="DANIEL">DANIEL</option>
+                                <option value="NICOLAS">NICOLAS</option>
+                                <option value="JOÃO">JOÃO</option>
+                                <option value="MARIA">MARIA</option>
+                                <option value="CARLOS">CARLOS</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Despacho</label>
+                        <textarea id="despacho" placeholder="Detalhes do despacho ou observações..."></textarea>
+                    </div>
+
+                    <div class="actions">
+                        <button type="submit" class="btn btn-primary">💾 Salvar Procedimento</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Variáveis globais
+        let procedimentos = [
+            {
+                ano: 2024,
+                status: "EM ANDAMENTO",
+                tipo: "IPL",
+                numeroCaso: "2024.0076494",
+                pje: "0800123-45.2024.4.01.3901",
+                delegacia: "DRE/SR/PA",
+                materia: "DROGA",
+                codinome: "Apreensão droga - Fiscalização Receita Federal",
+                despacho: "Aguardando oitiva: GUSTAVO HENRIQUE e GABRIEL BORGES",
+                escrivao: "DANIEL"
+            },
+            {
+                ano: 2024,
+                status: "RELATADO",
+                tipo: "IPL",
+                numeroCaso: "2024.0107799",
+                pje: "0800456-78.2024.4.01.3901",
+                delegacia: "DRE/SR/PA",
+                materia: "DROGA",
+                codinome: "Droga JADLOG",
+                despacho: "RELATÓRIO FINAL - INDICIAMENTO - EDUARDO JUNIOR PANTOJA",
+                escrivao: "NICOLAS"
+            },
+            {
+                ano: 2025,
+                status: "EM ANDAMENTO",
+                tipo: "NCV",
+                numeroCaso: "20250083672",
+                pje: "",
+                delegacia: "DPF/ATM/PA",
+                materia: "LICITAÇÃO E CONTRATOS",
+                codinome: "FÉ EM DEUS EMPREENDIMENTOS LTDA",
+                despacho: "",
+                escrivao: "DANIEL"
+            },
+            {
+                ano: 2023,
+                status: "RELATADO",
+                tipo: "IPL",
+                numeroCaso: "2023.0057079",
+                pje: "0800789-12.2023.4.01.3901",
+                delegacia: "DELEPATIDPRJ/SR/PF/PA",
+                materia: "FURTO",
+                codinome: "OPERAÇÃO VAR",
+                despacho: "RELATADO",
+                escrivao: "NICOLAS"
+            },
+            {
+                ano: 2025,
+                status: "EM ANDAMENTO",
+                tipo: "FLAGRANTE",
+                numeroCaso: "2025.0001234",
+                pje: "",
+                delegacia: "1ª DP Centro",
+                materia: "DOCUMENTO FALSO",
+                codinome: "Operação Documento Falso",
+                despacho: "Autuação em flagrante - aguardando audiência de custódia",
+                escrivao: "MARIA"
+            }
+        ];
+
+        let editingIndex = -1;
+        let currentTab = 'todos';
+
+        // Funções de edição inline
+        function editStatus(index) {
+            const statusOptions = [
+                'EM ANDAMENTO',
+                'RELATADO', 
+                'PENDENTE DE DESPACHO',
+                'COTA',
+                'FINALIZADO',
+                'INSTAURADO',
+                'DISTRIBUÍDO'
+            ];
+            
+            const span = document.querySelector(`[data-field="status"][data-index="${index}"]`);
+            const currentValue = procedimentos[index].status;
+            
+            const select = document.createElement('select');
+            select.className = 'inline-select';
+            
+            statusOptions.forEach(option => {
+                const optionElement = document.createElement('option');
+                optionElement.value = option;
+                optionElement.textContent = option;
+                if (option === currentValue) {
+                    optionElement.selected = true;
+                }
+                select.appendChild(optionElement);
+            });
+            
+            const saveBtn = document.createElement('button');
+            saveBtn.className = 'save-btn';
+            saveBtn.innerHTML = '✓';
+            saveBtn.onclick = () => saveInlineEdit(index, 'status', select.value);
+            
+            const cancelBtn = document.createElement('button');
+            cancelBtn.className = 'cancel-btn';
+            cancelBtn.innerHTML = '✕';
+            cancelBtn.onclick = () => cancelInlineEdit(index, 'status');
+            
+            const container = document.createElement('div');
+            container.appendChild(select);
+            container.appendChild(saveBtn);
+            container.appendChild(cancelBtn);
+            
+            span.innerHTML = '';
+            span.appendChild(container);
+            span.classList.add('editing');
+        }
+
+        function editField(index, field) {
+            const span = document.querySelector(`[data-field="${field}"][data-index="${index}"]`);
+            const currentValue = procedimentos[index][field] || '';
+            
+            const input = document.createElement('input');
+            input.className = 'inline-input';
+            input.value = currentValue;
+            input.type = 'text';
+            
+            const saveBtn = document.createElement('button');
+            saveBtn.className = 'save-btn';
+            saveBtn.innerHTML = '✓';
+            saveBtn.onclick = () => saveInlineEdit(index, field, input.value);
+            
+            const cancelBtn = document.createElement('button');
+            cancelBtn.className = 'cancel-btn';
+            cancelBtn.innerHTML = '✕';
+            cancelBtn.onclick = () => cancelInlineEdit(index, field);
+            
+            const container = document.createElement('div');
+            container.appendChild(input);
+            container.appendChild(saveBtn);
+            container.appendChild(cancelBtn);
+            
+            span.innerHTML = '';
+            span.appendChild(container);
+            span.classList.add('editing');
+            
+            input.focus();
+            input.select();
+        }
+
+        function saveInlineEdit(index, field, newValue) {
+            procedimentos[index][field] = newValue;
+            showAlert(`✅ ${field.toUpperCase()} atualizado com sucesso!`);
+            renderTable();
+        }
+
+        function cancelInlineEdit(index, field) {
+            renderTable();
+        }
+
+        // Funções de alerta
+        function showAlert(message, type = 'success') {
+            const alertContainer = document.getElementById('alertContainer');
+            const alert = document.createElement('div');
+            alert.className = `alert ${type}`;
+            alert.innerHTML = message;
+            alertContainer.appendChild(alert);
+            
+            setTimeout(() => {
+                if (alert.parentNode) {
+                    alert.remove();
+                }
+            }, 4000);
+        }
+
+        // Função para renderizar tabela
+        function renderTable() {
+            const tbody = document.getElementById('tableBody');
+            const searchTerm = document.getElementById('searchBox').value.toLowerCase();
+            const tipoFilter = document.getElementById('tipoFilter').value;
+            const delegaciaFilter = document.getElementById('delegaciaFilter').value.toLowerCase();
+
+            let filteredProcedimentos = procedimentos.filter(p => {
+                const matchesSearch = p.numeroCaso.toLowerCase().includes(searchTerm) ||
+                                    p.pje.toLowerCase().includes(searchTerm) ||
+                                    p.delegacia.toLowerCase().includes(searchTerm) ||
+                                    p.codinome.toLowerCase().includes(searchTerm) ||
+                                    p.materia.toLowerCase().includes(searchTerm) ||
+                                    p.escrivao.toLowerCase().includes(searchTerm);
+                
+                const matchesTipo = !tipoFilter || p.tipo === tipoFilter;
+                const matchesDelegacia = !delegaciaFilter || p.delegacia.toLowerCase().includes(delegaciaFilter);
+                
+                // Filtro por aba
+                if (currentTab !== 'todos') {
+                    const statusMap = {
+                        'em-andamento': 'EM ANDAMENTO',
+                        'relatado': 'RELATADO',
+                        'pendente-de-despacho': 'PENDENTE DE DESPACHO',
+                        'cota': 'COTA',
+                        'finalizado': 'FINALIZADO',
+                        'instaurado': 'INSTAURADO',
+                        'distribuido': 'DISTRIBUÍDO'
+                    };
+                    const matchesTab = p.status === statusMap[currentTab];
+                    return matchesSearch && matchesTipo && matchesDelegacia && matchesTab;
+                }
+
+                return matchesSearch && matchesTipo && matchesDelegacia;
+            });
+
+            tbody.innerHTML = filteredProcedimentos.map((proc) => {
+                const realIndex = procedimentos.indexOf(proc);
+                return `
+                    <tr>
+                        <td><strong>${proc.ano}</strong></td>
+                        <td>
+                            <span class="status ${getStatusClass(proc.status)} editable" 
+                                  onclick="editStatus(${realIndex})" 
+                                  data-field="status" 
+                                  data-index="${realIndex}">
+                                ${proc.status}
+                            </span>
+                        </td>
+                        <td><span class="tipo ${proc.tipo.toLowerCase()}">${proc.tipo}</span></td>
+                        <td><strong>${proc.numeroCaso}</strong></td>
+                        <td>
+                            <span class="editable" 
+                                  onclick="editField(${realIndex}, 'pje')" 
+                                  data-field="pje" 
+                                  data-index="${realIndex}">
+                                ${proc.pje || '-'}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="editable" 
+                                  onclick="editField(${realIndex}, 'delegacia')" 
+                                  data-field="delegacia" 
+                                  data-index="${realIndex}">
+                                ${proc.delegacia}
+                            </span>
+                        </td>
+                        <td>${proc.materia}</td>
+                        <td>
+                            <span class="editable" 
+                                  onclick="editField(${realIndex}, 'codinome')" 
+                                  data-field="codinome" 
+                                  data-index="${realIndex}">
+                                ${proc.codinome}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="editable" 
+                                  onclick="editField(${realIndex}, 'despacho')" 
+                                  data-field="despacho" 
+                                  data-index="${realIndex}">
+                                ${proc.despacho || '-'}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="editable" 
+                                  onclick="editField(${realIndex}, 'escrivao')" 
+                                  data-field="escrivao" 
+                                  data-index="${realIndex}">
+                                ${proc.escrivao}
+                            </span>
+                        </td>
+                        <td>
+                            <button class="btn-edit" onclick="editProcedimento(${realIndex})">✏️</button>
+                            <button class="btn-delete" onclick="deleteProcedimento(${realIndex})">🗑️</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            updateStats();
+        }
+
+        // Função para obter classe de status
+        function getStatusClass(status) {
+            const map = {
+                'EM ANDAMENTO': 'em-andamento',
+                'RELATADO': 'relatado',
+                'PENDENTE DE DESPACHO': 'pendente-de-despacho',
+                'COTA': 'cota',
+                'FINALIZADO': 'finalizado',
+                'INSTAURADO': 'instaurado',
+                'DISTRIBUÍDO': 'distribuido'
+            };
+            return map[status] || 'em-andamento';
+        }
+
+        // Função para atualizar estatísticas
+        function updateStats() {
+            document.getElementById('totalCount').textContent = procedimentos.length;
+            document.getElementById('emAndamentoCount').textContent = 
+                procedimentos.filter(p => p.status === 'EM ANDAMENTO').length;
+            document.getElementById('relatadoCount').textContent = 
+                procedimentos.filter(p => p.status === 'RELATADO').length;
+            document.getElementById('pendenteCount').textContent = 
+                procedimentos.filter(p => p.status === 'PENDENTE DE DESPACHO').length;
+            document.getElementById('finalizadoCount').textContent = 
+                procedimentos.filter(p => p.status === 'FINALIZADO').length;
+        }
+
+        // Função para mostrar aba
+        function showTab(tabName, element) {
+            currentTab = tabName;
+            
+            // Atualizar visual das abas
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            element.classList.add('active');
+            
+            renderTable();
+        }
+
+        // Funções de modal
+        function openModal() {
+            editingIndex = -1;
+            document.getElementById('modalTitle').textContent = 'Novo Procedimento';
+            document.getElementById('procedimentoForm').reset();
+            document.getElementById('ano').value = new Date().getFullYear();
+            document.getElementById('modal').style.display = 'block';
+        }
+
+        function closeModal() {
+            document.getElementById('modal').style.display = 'none';
+        }
+
+        // Funções de CRUD
+        function editProcedimento(index) {
+            editingIndex = index;
+            const proc = procedimentos[index];
+            
+            document.getElementById('modalTitle').textContent = 'Editar Procedimento';
+            document.getElementById('ano').value = proc.ano;
+            document.getElementById('status').value = proc.status;
+            document.getElementById('tipo').value = proc.tipo;
+            document.getElementById('numeroCaso').value = proc.numeroCaso;
+            document.getElementById('pje').value = proc.pje || '';
+            document.getElementById('delegacia').value = proc.delegacia;
+            document.getElementById('materia').value = proc.materia;
+            document.getElementById('codinome').value = proc.codinome;
+            document.getElementById('despacho').value = proc.despacho;
+            document.getElementById('escrivao').value = proc.escrivao;
+            
+            document.getElementById('modal').style.display = 'block';
+        }
+
+        function deleteProcedimento(index) {
+            if (confirm('Tem certeza que deseja excluir este procedimento?')) {
+                procedimentos.splice(index, 1);
+                showAlert('✅ Procedimento excluído com sucesso!');
+                renderTable();
+            }
+        }
+
+        // Função para exportar Excel
+        function exportToExcel() {
+            try {
+                // Verificar se a biblioteca XLSX está carregada
+                if (typeof XLSX === 'undefined') {
+                    exportToCSV();
+                    return;
+                }
+                
+                console.log('Exportando para Excel...');
+                
+                // Criar um novo workbook
+                const wb = XLSX.utils.book_new();
+                
+                // Preparar os dados para exportação
+                const wsData = [
+                    ['ANO', 'STATUS', 'TIPO', 'N° do Caso', 'PJE', 'DELEGACIA', 'MATÉRIA', 'CODINOME', 'DESPACHO', 'ESCRIVÃO']
+                ];
+                
+                procedimentos.forEach(proc => {
+                    wsData.push([
+                        proc.ano,
+                        proc.status,
+                        proc.tipo,
+                        proc.numeroCaso,
+                        proc.pje || '',
+                        proc.delegacia,
+                        proc.materia,
+                        proc.codinome,
+                        proc.despacho || '',
+                        proc.escrivao
+                    ]);
+                });
+                
+                // Criar a planilha
+                const ws = XLSX.utils.aoa_to_sheet(wsData);
+                
+                // Ajustar largura das colunas
+                ws['!cols'] = [
+                    {wch: 6},  // ANO
+                    {wch: 18}, // STATUS
+                    {wch: 8},  // TIPO
+                    {wch: 15}, // N° do Caso
+                    {wch: 25}, // PJE
+                    {wch: 20}, // DELEGACIA
+                    {wch: 15}, // MATÉRIA
+                    {wch: 40}, // CODINOME
+                    {wch: 50}, // DESPACHO
+                    {wch: 12}  // ESCRIVÃO
+                ];
+                
+                // Adicionar a planilha ao workbook
+                XLSX.utils.book_append_sheet(wb, ws, "Procedimentos");
+                
+                // Gerar nome do arquivo com data
+                const today = new Date();
+                const fileName = `Controle_IPLs_${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}.xlsx`;
+                
+                // Fazer download
+                XLSX.writeFile(wb, fileName);
+                
+                showAlert(`✅ Planilha Excel exportada com sucesso! (${procedimentos.length} procedimentos)`);
+                
+            } catch (error) {
+                console.error('Erro na exportação Excel:', error);
+                exportToCSV();
+            }
+        }
+
+        // Função para exportar CSV (fallback)
+        function exportToCSV() {
+            try {
+                console.log('Exportando para CSV...');
+                
+                // Cabeçalhos
+                let csvContent = "ANO,STATUS,TIPO,N° do Caso,PJE,DELEGACIA,MATÉRIA,CODINOME,DESPACHO,ESCRIVÃO\n";
+                
+                // Dados
+                procedimentos.forEach(proc => {
+                    const row = [
+                        proc.ano,
+                        `"${proc.status}"`,
+                        proc.tipo,
+                        `"${proc.numeroCaso}"`,
+                        `"${proc.pje || ''}"`,
+                        `"${proc.delegacia}"`,
+                        `"${proc.materia}"`,
+                        `"${proc.codinome.replace(/"/g, '""')}"`,
+                        `"${(proc.despacho || '').replace(/"/g, '""')}"`,
+                        `"${proc.escrivao}"`
+                    ].join(',');
+                    csvContent += row + "\n";
+                });
+                
+                // Criar blob e fazer download
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement("a");
+                
+                if (link.download !== undefined) {
+                    const url = URL.createObjectURL(blob);
+                    link.setAttribute("href", url);
+                    const today = new Date();
+                    const fileName = `Controle_IPLs_${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}.csv`;
+                    link.setAttribute("download", fileName);
+                    link.style.visibility = 'hidden';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    
+                    showAlert(`✅ Arquivo CSV exportado com sucesso! (${procedimentos.length} procedimentos)`);
+                } else {
+                    throw new Error('Download não suportado');
+                }
+                
+            } catch (error) {
+                console.error('Erro na exportação CSV:', error);
+                showAlert('❌ Erro ao exportar arquivo!', 'warning');
+            }
+        }
+
+        // Função para copiar dados
+        function copyToClipboard() {
+            try {
+                // Criar texto com dados formatados para Excel
+                let text = "ANO\tSTATUS\tTIPO\tN° do Caso\tPJE\tDELEGACIA\tMATÉRIA\tCODINOME\tDESPACHO\tESCRIVÃO\n";
+                
+                procedimentos.forEach(proc => {
+                    text += `${proc.ano}\t${proc.status}\t${proc.tipo}\t${proc.numeroCaso}\t${proc.pje || ''}\t${proc.delegacia}\t${proc.materia}\t${proc.codinome}\t${proc.despacho || ''}\t${proc.escrivao}\n`;
+                });
+                
+                // Tentar copiar para área de transferência
+                if (navigator.clipboard && window.isSecureContext) {
+                    navigator.clipboard.writeText(text).then(() => {
+                        showAlert('✅ Dados copiados! Cole no Excel usando Ctrl+V');
+                    }).catch(() => {
+                        fallbackCopy(text);
+                    });
+                } else {
+                    fallbackCopy(text);
+                }
+                
+            } catch (error) {
+                console.error('Erro ao copiar:', error);
+                showAlert('❌ Erro ao copiar dados!', 'warning');
+            }
+        }
+
+        // Função de cópia alternativa
+        function fallbackCopy(text) {
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            textArea.style.position = "fixed";
+            textArea.style.left = "-999999px";
+            textArea.style.top = "-999999px";
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            
+            try {
+                document.execCommand('copy');
+                showAlert('✅ Dados copiados! Cole no Excel usando Ctrl+V');
+            } catch (err) {
+                showAlert('⚠️ Não foi possível copiar automaticamente. Use o botão Exportar Excel', 'warning');
+            }
+            
+            document.body.removeChild(textArea);
+        }
+
+        // Event listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            // Renderizar tabela inicial
+            renderTable();
+            
+            // Event listeners para formulário
+            document.getElementById('procedimentoForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const procedimento = {
+                    ano: parseInt(document.getElementById('ano').value),
+                    status: document.getElementById('status').value,
+                    tipo: document.getElementById('tipo').value,
+                    numeroCaso: document.getElementById('numeroCaso').value,
+                    pje: document.getElementById('pje').value || '',
+                    delegacia: document.getElementById('delegacia').value,
+                    materia: document.getElementById('materia').value,
+                    codinome: document.getElementById('codinome').value,
+                    despacho: document.getElementById('despacho').value || '',
+                    escrivao: document.getElementById('escrivao').value
+                };
+
+                if (editingIndex >= 0) {
+                    procedimentos[editingIndex] = procedimento;
+                    showAlert('✅ Procedimento atualizado com sucesso!');
+                } else {
+                    procedimentos.push(procedimento);
+                    showAlert('✅ Procedimento cadastrado com sucesso!');
+                }
+
+                closeModal();
+                renderTable();
+            });
+
+            // Event listeners para filtros
+            document.getElementById('searchBox').addEventListener('input', renderTable);
+            document.getElementById('tipoFilter').addEventListener('change', renderTable);
+            document.getElementById('delegaciaFilter').addEventListener('input', renderTable);
+            
+            // Verificar se XLSX está carregada
+            setTimeout(() => {
+                if (typeof XLSX === 'undefined') {
+                    showAlert('⚠️ Biblioteca Excel não carregou. Use "📋 Copiar Dados"', 'warning');
+                } else {
+                    showAlert('✅ Sistema carregado com sucesso!', 'success');
+                }
+            }, 1000);
+        });
+    </script>
+</body>
+</html>
