@@ -598,6 +598,87 @@
         .kb-card .kb-body { font-size: 13px; color: #555; white-space: pre-wrap; max-height: 150px; overflow-y: auto; }
         .kb-card .kb-actions { margin-top: 10px; text-align: right; }
 
+        .chat-box {
+            display: flex;
+            flex-direction: column;
+            height: 65vh;
+            background: #f8f9fa;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+        }
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+        .chat-msg {
+            max-width: 75%;
+            padding: 12px 16px;
+            border-radius: 14px;
+            margin-bottom: 12px;
+            font-size: 14px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+        }
+        .chat-msg.user {
+            background: #3498db;
+            color: white;
+            margin-left: auto;
+            border-bottom-right-radius: 3px;
+        }
+        .chat-msg.assistant {
+            background: white;
+            color: #2c3e50;
+            border: 1px solid #e0e0e0;
+            margin-right: auto;
+            border-bottom-left-radius: 3px;
+        }
+        .chat-input-bar {
+            display: flex;
+            gap: 10px;
+            padding: 15px;
+            background: white;
+            border-top: 2px solid #ecf0f1;
+        }
+        .chat-input-bar input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid #ddd;
+            border-radius: 20px;
+            font-size: 14px;
+        }
+        .chat-input-bar button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 20px;
+            background: #3498db;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .chat-suggestions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            padding: 0 15px 15px;
+            background: white;
+        }
+        .chat-suggestions button {
+            background: #ecf0f1;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 15px;
+            font-size: 12px;
+            cursor: pointer;
+            color: #34495e;
+        }
+        .chat-unavailable {
+            padding: 30px;
+            text-align: center;
+            color: #888;
+        }
+
         @media (max-width: 768px) {
             .header h1 {
                 font-size: 1.8em;
@@ -660,6 +741,7 @@
         <div class="top-nav">
             <button class="active" onclick="showView('procedimentos', this)">📁 Procedimentos</button>
             <button onclick="showView('kb', this)">📚 Base de Conhecimento</button>
+            <button onclick="showView('ai', this)">🤖 Assistente IA</button>
         </div>
 
         <div class="main-content">
@@ -726,6 +808,22 @@
                     <input type="text" class="search-box" id="kbSearchBox" placeholder="🔍 Buscar na base de conhecimento...">
                 </div>
                 <div class="kb-grid" id="kbGrid"></div>
+            </div>
+
+            <div id="view-ai" class="view">
+                <div class="chat-box">
+                    <div class="chat-messages" id="chatMessages"></div>
+                    <div class="chat-suggestions">
+                        <button onclick="askAiPreset('Quais procedimentos estão com prazo vencido ou prestes a vencer?')">⏰ Prazos críticos</button>
+                        <button onclick="askAiPreset('Quais procedimentos estão há mais de 15 dias sem despacho?')">📭 Sem despacho</button>
+                        <button onclick="askAiPreset('Quais diligências pendentes existem em todos os procedimentos? Organize por caso.')">📋 Diligências pendentes</button>
+                        <button onclick="askAiPreset('Me dê um resumo geral da situação de todos os procedimentos em andamento, priorizando o que precisa de ação imediata.')">🧭 O que fazer agora</button>
+                    </div>
+                    <div class="chat-input-bar">
+                        <input type="text" id="chatInput" placeholder="Pergunte sobre prazos, diligências, status dos procedimentos...">
+                        <button onclick="sendChat()">Enviar</button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -1093,6 +1191,113 @@
             document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
             document.getElementById('view-' + viewName).classList.add('active');
             if (viewName === 'kb') renderKb();
+            if (viewName === 'ai') initAi();
+        }
+
+        // ===== Assistente IA (capacidade "sample") =====
+        let sampleCapability = null;
+        let aiInitialized = false;
+        let chatMessages = [];
+
+        async function initAi() {
+            if (aiInitialized) return;
+            aiInitialized = true;
+            const chatEl = document.getElementById('chatMessages');
+            if (typeof claude === 'undefined' || !claude.use) {
+                chatEl.innerHTML = '<div class="chat-unavailable">🤖 O assistente de IA só funciona quando este documento é aberto como Artifact (claude.ai). Abrindo o arquivo HTML direto no navegador, essa aba fica indisponível.</div>';
+                document.getElementById('chatInput').disabled = true;
+                return;
+            }
+            try {
+                sampleCapability = await claude.use('sample');
+            } catch (e) {
+                sampleCapability = null;
+            }
+            if (!sampleCapability) {
+                chatEl.innerHTML = '<div class="chat-unavailable">🤖 Assistente de IA indisponível nesta visualização (sem permissão concedida).</div>';
+                document.getElementById('chatInput').disabled = true;
+                return;
+            }
+            renderChat();
+            if (chatMessages.length === 0) {
+                appendChatMessage('assistant', 'Olá, Delegado. Posso ajudar a analisar os procedimentos em andamento: prazos, diligências pendentes, tempo sem despacho e prioridades. O que deseja saber?');
+            }
+        }
+
+        function buildAiContext() {
+            return JSON.stringify(procedimentos.map(p => ({
+                tipo: p.tipo,
+                numeroCaso: p.numeroCaso,
+                pje: p.pje || null,
+                status: p.status,
+                delegacia: p.delegacia,
+                materia: p.materia,
+                codinome: p.codinome,
+                escrivao: p.escrivao,
+                operacaoPolicial: p.operacaoPolicial,
+                resumo: p.resumo || null,
+                prazo: p.prazo || null,
+                diasParaPrazo: diasParaPrazo(p),
+                dataUltimoDespacho: p.dataUltimoDespacho || null,
+                diasSemDespacho: diasSemDespacho(p),
+                diligenciasUteis: p.diligenciasUteis,
+                diligenciasPendentes: p.diligenciasPendentes,
+                ultimasAnotacoes: p.log.slice(-3).map(l => l.texto)
+            })), null, 1);
+        }
+
+        function appendChatMessage(role, text) {
+            chatMessages.push({ role, text });
+            renderChat();
+        }
+
+        function renderChat() {
+            const chatEl = document.getElementById('chatMessages');
+            chatEl.innerHTML = chatMessages.map(m =>
+                `<div class="chat-msg ${m.role}">${m.text.replace(/</g,'&lt;')}</div>`
+            ).join('');
+            chatEl.scrollTop = chatEl.scrollHeight;
+        }
+
+        function askAiPreset(texto) {
+            document.getElementById('chatInput').value = texto;
+            sendChat();
+        }
+
+        async function sendChat() {
+            if (!sampleCapability) return;
+            const input = document.getElementById('chatInput');
+            const question = input.value.trim();
+            if (!question) return;
+            input.value = '';
+            appendChatMessage('user', question);
+            appendChatMessage('assistant', '⏳ Analisando os procedimentos...');
+
+            const historico = chatMessages.slice(0, -2).slice(-6)
+                .map(m => `${m.role === 'user' ? 'DELEGADO' : 'ASSISTENTE'}: ${m.text}`).join('\n');
+
+            const prompt = `Você é um assistente de apoio a um Delegado de Polícia Federal na gestão de procedimentos policiais (IPL, RDF, RE, NCV, Flagrante). `
+                + `Responda em português, de forma objetiva e técnica, citando o número do caso e o codinome quando relevante. `
+                + `Aponte prazos vencidos ou próximos (priorize diasParaPrazo negativo ou baixo), procedimentos há muito tempo sem despacho (diasSemDespacho alto), `
+                + `diligências pendentes e, quando fizer sentido, sugira a próxima ação útil. Não invente dados fora do JSON fornecido.\n\n`
+                + `DADOS ATUAIS DOS PROCEDIMENTOS (JSON):\n${buildAiContext()}\n\n`
+                + (historico ? `HISTÓRICO RECENTE DA CONVERSA:\n${historico}\n\n` : '')
+                + `PERGUNTA DO DELEGADO: ${question}`;
+
+            try {
+                const result = await sampleCapability(prompt, {
+                    onText: ({ text }) => {
+                        chatMessages[chatMessages.length - 1].text = text || '⏳ Analisando os procedimentos...';
+                        renderChat();
+                    }
+                });
+                chatMessages[chatMessages.length - 1].text = result.text;
+                renderChat();
+            } catch (err) {
+                const msg = (err && (err.message || err.code)) || 'erro desconhecido';
+                chatMessages[chatMessages.length - 1].text = `⚠️ Não foi possível consultar o assistente: ${msg}`;
+                renderChat();
+            }
         }
 
         function diasSemDespacho(p) {
@@ -1824,6 +2029,10 @@
                 renderKb();
             });
             document.getElementById('kbSearchBox').addEventListener('input', renderKb);
+
+            document.getElementById('chatInput').addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') sendChat();
+            });
 
             // Verificar se XLSX está carregada
             setTimeout(() => {
