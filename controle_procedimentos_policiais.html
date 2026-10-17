@@ -482,6 +482,122 @@
             margin-left: 2px;
         }
 
+        .top-nav {
+            display: flex;
+            gap: 10px;
+            padding: 15px 30px 0;
+            background: #f8f9fa;
+        }
+
+        .top-nav button {
+            padding: 10px 18px;
+            border: none;
+            background: #ecf0f1;
+            color: #2c3e50;
+            border-radius: 8px 8px 0 0;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .top-nav button.active {
+            background: white;
+            color: #1a1a2e;
+            box-shadow: 0 -3px 0 #3498db inset;
+        }
+
+        .view { display: none; }
+        .view.active { display: block; }
+
+        .badge-op {
+            background: #ff4757;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 10px;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+
+        .prazo-ok { color: #27ae60; font-weight: bold; }
+        .prazo-alerta { color: #e67e22; font-weight: bold; }
+        .prazo-vencido { color: #e74c3c; font-weight: bold; }
+
+        .dias-badge {
+            padding: 3px 8px;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+        .dias-ok { background: #d4edda; color: #155724; }
+        .dias-alerta { background: #fff3cd; color: #856404; }
+        .dias-critico { background: #f8d7da; color: #721c24; }
+
+        .btn-ws {
+            background: #2c3e50;
+            color: white;
+            padding: 6px 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+            margin-right: 5px;
+        }
+
+        .ws-section {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .ws-section h4 {
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
+
+        .dil-list { list-style: none; }
+        .dil-list li {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 10px;
+            background: white;
+            border-radius: 6px;
+            margin-bottom: 6px;
+            border-left: 4px solid #3498db;
+        }
+        .dil-list.pendente li { border-left-color: #e74c3c; }
+        .dil-list li button { background: none; border: none; cursor: pointer; color: #e74c3c; font-size: 14px; }
+
+        .dil-add { display: flex; gap: 8px; margin-top: 8px; }
+        .dil-add input { flex: 1; padding: 8px; border: 2px solid #ddd; border-radius: 6px; }
+        .dil-add button { padding: 8px 14px; border: none; border-radius: 6px; background: #3498db; color: white; cursor: pointer; }
+
+        .log-entry {
+            background: white;
+            padding: 10px 12px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            border-left: 4px solid #9b59b6;
+        }
+        .log-entry .log-date { font-size: 11px; color: #888; font-weight: bold; }
+
+        .kb-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 15px;
+        }
+        .kb-card {
+            background: white;
+            border-radius: 10px;
+            padding: 16px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            border-top: 4px solid #8e44ad;
+        }
+        .kb-card h4 { margin-bottom: 8px; color: #2c3e50; }
+        .kb-card .kb-body { font-size: 13px; color: #555; white-space: pre-wrap; max-height: 150px; overflow-y: auto; }
+        .kb-card .kb-actions { margin-top: 10px; text-align: right; }
+
         @media (max-width: 768px) {
             .header h1 {
                 font-size: 1.8em;
@@ -541,7 +657,13 @@
             </div>
         </div>
 
+        <div class="top-nav">
+            <button class="active" onclick="showView('procedimentos', this)">📁 Procedimentos</button>
+            <button onclick="showView('kb', this)">📚 Base de Conhecimento</button>
+        </div>
+
         <div class="main-content">
+            <div id="view-procedimentos" class="view active">
             <div class="controls">
                 <button class="btn btn-primary" onclick="openModal()">➕ Novo Procedimento</button>
                 <button class="btn btn-success" onclick="exportToExcel()">📊 Exportar Excel</button>
@@ -556,6 +678,9 @@
                     <option value="FLAGRANTE">FLAGRANTE</option>
                 </select>
                 <input type="text" class="filter-select" id="delegaciaFilter" placeholder="Filtrar por delegacia..." style="max-width: 200px;">
+                <label style="display:flex; align-items:center; gap:6px; font-size:13px; font-weight:bold; color:#555;">
+                    <input type="checkbox" id="operacaoFilter" style="width:auto;"> Só com Operação Policial
+                </label>
             </div>
 
             <div id="alertContainer"></div>
@@ -583,7 +708,8 @@
                             <th>Delegacia</th>
                             <th>Matéria</th>
                             <th>Codinome</th>
-                            <th>Despacho</th>
+                            <th>Prazo</th>
+                            <th>Dias s/ despacho</th>
                             <th>Escrivão</th>
                             <th>Ações</th>
                         </tr>
@@ -591,6 +717,15 @@
                     <tbody id="tableBody">
                     </tbody>
                 </table>
+            </div>
+            </div>
+
+            <div id="view-kb" class="view">
+                <div class="controls">
+                    <button class="btn btn-primary" onclick="openKbModal()">➕ Novo Registro</button>
+                    <input type="text" class="search-box" id="kbSearchBox" placeholder="🔍 Buscar na base de conhecimento...">
+                </div>
+                <div class="kb-grid" id="kbGrid"></div>
             </div>
         </div>
     </div>
@@ -699,6 +834,26 @@
                         </div>
                     </div>
 
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Prazo (próximo vencimento)</label>
+                            <input type="date" id="prazo">
+                        </div>
+                        <div class="form-group">
+                            <label>Data do último despacho</label>
+                            <input type="date" id="dataUltimoDespacho">
+                        </div>
+                        <div class="form-group" style="display:flex; align-items:center; gap:8px; margin-top:24px;">
+                            <input type="checkbox" id="operacaoPolicial" style="width:auto;">
+                            <label style="margin:0;">🚨 Possui Operação Policial</label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Resumo (breve)</label>
+                        <textarea id="resumo" placeholder="Resumo objetivo do caso..."></textarea>
+                    </div>
+
                     <div class="form-group">
                         <label>Despacho</label>
                         <textarea id="despacho" placeholder="Detalhes do despacho ou observações..."></textarea>
@@ -712,9 +867,93 @@
         </div>
     </div>
 
+    <!-- Modal Workspace (trabalhar no procedimento) -->
+    <div class="modal" id="wsModal">
+        <div class="modal-content" style="max-width: 900px;">
+            <div class="modal-header">
+                <h3 id="wsTitle">Procedimento</h3>
+                <button class="close" onclick="closeWsModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="ws-section" id="wsResumoBox"></div>
+
+                <div class="ws-section">
+                    <h4>✅ Diligências Úteis</h4>
+                    <ul class="dil-list" id="dilUteisList"></ul>
+                    <div class="dil-add">
+                        <input type="text" id="dilUteisInput" placeholder="Nova diligência útil...">
+                        <button onclick="addDiligencia('uteis')">Adicionar</button>
+                    </div>
+                </div>
+
+                <div class="ws-section">
+                    <h4>⏳ Diligências Pendentes</h4>
+                    <ul class="dil-list pendente" id="dilPendentesList"></ul>
+                    <div class="dil-add">
+                        <input type="text" id="dilPendentesInput" placeholder="Nova diligência pendente...">
+                        <button onclick="addDiligencia('pendentes')">Adicionar</button>
+                    </div>
+                </div>
+
+                <div class="ws-section">
+                    <h4>🗒️ Anotações / Andamento</h4>
+                    <div id="logList"></div>
+                    <div class="dil-add">
+                        <input type="text" id="logInput" placeholder="Registrar andamento, conversa, decisão...">
+                        <button onclick="addLog()">Registrar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Base de Conhecimento -->
+    <div class="modal" id="kbModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="kbModalTitle">Novo Registro</h3>
+                <button class="close" onclick="closeKbModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="kbForm">
+                    <div class="form-group">
+                        <label>Título</label>
+                        <input type="text" id="kbTitulo" required placeholder="Ex: Roteiro de diligências para tráfico de drogas">
+                    </div>
+                    <div class="form-group">
+                        <label>Categoria</label>
+                        <input type="text" id="kbCategoria" placeholder="Ex: Legislação, Modelo de despacho, Procedimento interno..." list="kbCatList">
+                        <datalist id="kbCatList">
+                            <option value="Legislação">
+                            <option value="Modelo de Despacho">
+                            <option value="Procedimento Interno">
+                            <option value="Jurisprudência">
+                            <option value="Checklist">
+                        </datalist>
+                    </div>
+                    <div class="form-group">
+                        <label>Conteúdo</label>
+                        <textarea id="kbConteudo" style="height:160px;" required placeholder="Cole aqui o conteúdo de referência..."></textarea>
+                    </div>
+                    <div class="actions">
+                        <button type="submit" class="btn btn-primary">💾 Salvar Registro</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <script>
-        // Variáveis globais
-        let procedimentos = [
+        // Persistência local
+        const STORAGE_KEY = 'controleProcedimentos_v2';
+        const KB_STORAGE_KEY = 'controleProcedimentos_kb_v1';
+
+        function loadProcedimentos() {
+            try {
+                const raw = localStorage.getItem(STORAGE_KEY);
+                if (raw) return JSON.parse(raw);
+            } catch (e) { console.error('Erro ao carregar dados salvos:', e); }
+            return [
             {
                 ano: 2024,
                 status: "EM ANDAMENTO",
@@ -725,7 +964,14 @@
                 materia: "DROGA",
                 codinome: "Apreensão droga - Fiscalização Receita Federal",
                 despacho: "Aguardando oitiva: GUSTAVO HENRIQUE e GABRIEL BORGES",
-                escrivao: "DANIEL"
+                escrivao: "DANIEL",
+                prazo: "",
+                dataUltimoDespacho: "",
+                operacaoPolicial: false,
+                resumo: "",
+                diligenciasUteis: [],
+                diligenciasPendentes: [],
+                log: []
             },
             {
                 ano: 2024,
@@ -737,7 +983,14 @@
                 materia: "DROGA",
                 codinome: "Droga JADLOG",
                 despacho: "RELATÓRIO FINAL - INDICIAMENTO - EDUARDO JUNIOR PANTOJA",
-                escrivao: "NICOLAS"
+                escrivao: "NICOLAS",
+                prazo: "",
+                dataUltimoDespacho: "",
+                operacaoPolicial: false,
+                resumo: "",
+                diligenciasUteis: [],
+                diligenciasPendentes: [],
+                log: []
             },
             {
                 ano: 2025,
@@ -749,7 +1002,14 @@
                 materia: "LICITAÇÃO E CONTRATOS",
                 codinome: "FÉ EM DEUS EMPREENDIMENTOS LTDA",
                 despacho: "",
-                escrivao: "DANIEL"
+                escrivao: "DANIEL",
+                prazo: "",
+                dataUltimoDespacho: "",
+                operacaoPolicial: false,
+                resumo: "",
+                diligenciasUteis: [],
+                diligenciasPendentes: [],
+                log: []
             },
             {
                 ano: 2023,
@@ -761,7 +1021,14 @@
                 materia: "FURTO",
                 codinome: "OPERAÇÃO VAR",
                 despacho: "RELATADO",
-                escrivao: "NICOLAS"
+                escrivao: "NICOLAS",
+                prazo: "",
+                dataUltimoDespacho: "",
+                operacaoPolicial: true,
+                resumo: "",
+                diligenciasUteis: [],
+                diligenciasPendentes: [],
+                log: []
             },
             {
                 ano: 2025,
@@ -773,12 +1040,231 @@
                 materia: "DOCUMENTO FALSO",
                 codinome: "Operação Documento Falso",
                 despacho: "Autuação em flagrante - aguardando audiência de custódia",
-                escrivao: "MARIA"
+                escrivao: "MARIA",
+                prazo: "",
+                dataUltimoDespacho: "",
+                operacaoPolicial: true,
+                resumo: "",
+                diligenciasUteis: [],
+                diligenciasPendentes: [],
+                log: []
             }
         ];
+        }
+
+        function loadKb() {
+            try {
+                const raw = localStorage.getItem(KB_STORAGE_KEY);
+                if (raw) return JSON.parse(raw);
+            } catch (e) { console.error('Erro ao carregar base de conhecimento:', e); }
+            return [];
+        }
+
+        function saveProcedimentos() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(procedimentos));
+        }
+
+        function saveKb() {
+            localStorage.setItem(KB_STORAGE_KEY, JSON.stringify(kb));
+        }
+
+        function normalizeProcedimento(p) {
+            p.prazo = p.prazo || "";
+            p.dataUltimoDespacho = p.dataUltimoDespacho || "";
+            p.operacaoPolicial = !!p.operacaoPolicial;
+            p.resumo = p.resumo || "";
+            p.diligenciasUteis = p.diligenciasUteis || [];
+            p.diligenciasPendentes = p.diligenciasPendentes || [];
+            p.log = p.log || [];
+            return p;
+        }
+
+        // Variáveis globais
+        let procedimentos = loadProcedimentos().map(normalizeProcedimento);
+        let kb = loadKb();
 
         let editingIndex = -1;
         let currentTab = 'todos';
+        let wsIndex = -1;
+
+        function showView(viewName, element) {
+            document.querySelectorAll('.top-nav button').forEach(b => b.classList.remove('active'));
+            element.classList.add('active');
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.getElementById('view-' + viewName).classList.add('active');
+            if (viewName === 'kb') renderKb();
+        }
+
+        function diasSemDespacho(p) {
+            if (!p.dataUltimoDespacho) return null;
+            const data = new Date(p.dataUltimoDespacho + 'T00:00:00');
+            const hoje = new Date();
+            hoje.setHours(0,0,0,0);
+            return Math.floor((hoje - data) / (1000 * 60 * 60 * 24));
+        }
+
+        function diasParaPrazo(p) {
+            if (!p.prazo) return null;
+            const data = new Date(p.prazo + 'T00:00:00');
+            const hoje = new Date();
+            hoje.setHours(0,0,0,0);
+            return Math.floor((data - hoje) / (1000 * 60 * 60 * 24));
+        }
+
+        // ===== Workspace do procedimento =====
+        function openWorkspace(index) {
+            wsIndex = index;
+            const p = procedimentos[index];
+            document.getElementById('wsTitle').textContent = `${p.tipo} ${p.numeroCaso} ${p.codinome ? '- ' + p.codinome : ''}`;
+
+            const dSemDespacho = diasSemDespacho(p);
+            const dPrazo = diasParaPrazo(p);
+            document.getElementById('wsResumoBox').innerHTML = `
+                <h4>📌 Resumo</h4>
+                <p style="margin-bottom:10px;">${p.resumo ? p.resumo.replace(/</g,'&lt;') : '<em>Sem resumo cadastrado. Edite o procedimento para adicionar.</em>'}</p>
+                <p><strong>PJE / Distribuição:</strong> ${p.pje || '-'} &nbsp;|&nbsp;
+                   <strong>Delegacia:</strong> ${p.delegacia} &nbsp;|&nbsp;
+                   <strong>Status:</strong> ${p.status}</p>
+                <p><strong>Prazo:</strong> ${p.prazo ? p.prazo.split('-').reverse().join('/') + (dPrazo !== null ? ' (' + (dPrazo >= 0 ? dPrazo + ' dias restantes' : Math.abs(dPrazo) + ' dias vencido') + ')' : '') : 'Não definido'} &nbsp;|&nbsp;
+                   <strong>Dias sem despacho:</strong> ${dSemDespacho !== null ? dSemDespacho : 'Sem registro'}
+                   ${p.operacaoPolicial ? ' &nbsp;<span class="badge-op">🚨 OPERAÇÃO POLICIAL</span>' : ''}</p>
+            `;
+
+            renderDiligencias();
+            renderLog();
+            document.getElementById('wsModal').style.display = 'block';
+        }
+
+        function closeWsModal() {
+            document.getElementById('wsModal').style.display = 'none';
+            renderTable();
+        }
+
+        function renderDiligencias() {
+            const p = procedimentos[wsIndex];
+            const uteisEl = document.getElementById('dilUteisList');
+            const pendEl = document.getElementById('dilPendentesList');
+
+            uteisEl.innerHTML = p.diligenciasUteis.map((d, i) => `
+                <li><span>${d.replace(/</g,'&lt;')}</span><button onclick="removeDiligencia('uteis', ${i})">✕</button></li>
+            `).join('') || '<li style="border:none; background:none; color:#999;">Nenhuma diligência registrada.</li>';
+
+            pendEl.innerHTML = p.diligenciasPendentes.map((d, i) => `
+                <li><span>${d.replace(/</g,'&lt;')}</span>
+                    <span>
+                        <button title="Concluir e mover para úteis" onclick="concluirDiligencia(${i})">✔️</button>
+                        <button onclick="removeDiligencia('pendentes', ${i})">✕</button>
+                    </span>
+                </li>
+            `).join('') || '<li style="border:none; background:none; color:#999;">Nenhuma pendência registrada.</li>';
+        }
+
+        function addDiligencia(tipo) {
+            const inputId = tipo === 'uteis' ? 'dilUteisInput' : 'dilPendentesInput';
+            const input = document.getElementById(inputId);
+            const valor = input.value.trim();
+            if (!valor) return;
+            const p = procedimentos[wsIndex];
+            if (tipo === 'uteis') p.diligenciasUteis.push(valor);
+            else p.diligenciasPendentes.push(valor);
+            input.value = '';
+            saveProcedimentos();
+            renderDiligencias();
+        }
+
+        function removeDiligencia(tipo, i) {
+            const p = procedimentos[wsIndex];
+            if (tipo === 'uteis') p.diligenciasUteis.splice(i, 1);
+            else p.diligenciasPendentes.splice(i, 1);
+            saveProcedimentos();
+            renderDiligencias();
+        }
+
+        function concluirDiligencia(i) {
+            const p = procedimentos[wsIndex];
+            const [item] = p.diligenciasPendentes.splice(i, 1);
+            p.diligenciasUteis.push(item);
+            saveProcedimentos();
+            renderDiligencias();
+        }
+
+        function renderLog() {
+            const p = procedimentos[wsIndex];
+            const logEl = document.getElementById('logList');
+            const entries = [...p.log].reverse();
+            logEl.innerHTML = entries.map(e => `
+                <div class="log-entry">
+                    <div class="log-date">${new Date(e.data).toLocaleString('pt-BR')}</div>
+                    <div>${e.texto.replace(/</g,'&lt;')}</div>
+                </div>
+            `).join('') || '<p style="color:#999;">Nenhum registro de andamento ainda.</p>';
+        }
+
+        function addLog() {
+            const input = document.getElementById('logInput');
+            const valor = input.value.trim();
+            if (!valor) return;
+            const p = procedimentos[wsIndex];
+            p.log.push({ data: new Date().toISOString(), texto: valor });
+            input.value = '';
+            saveProcedimentos();
+            renderLog();
+        }
+
+        // ===== Base de Conhecimento =====
+        function renderKb() {
+            const grid = document.getElementById('kbGrid');
+            const term = (document.getElementById('kbSearchBox').value || '').toLowerCase();
+            const filtered = kb.filter(k =>
+                k.titulo.toLowerCase().includes(term) ||
+                (k.categoria || '').toLowerCase().includes(term) ||
+                k.conteudo.toLowerCase().includes(term)
+            );
+            grid.innerHTML = filtered.map((k) => {
+                const realIndex = kb.indexOf(k);
+                return `
+                <div class="kb-card">
+                    <h4>${k.titulo.replace(/</g,'&lt;')}</h4>
+                    <div style="font-size:11px; color:#8e44ad; font-weight:bold; margin-bottom:8px;">${k.categoria ? k.categoria.replace(/</g,'&lt;') : 'Geral'}</div>
+                    <div class="kb-body">${k.conteudo.replace(/</g,'&lt;')}</div>
+                    <div class="kb-actions">
+                        <button class="btn-edit" onclick="editKb(${realIndex})">✏️</button>
+                        <button class="btn-delete" onclick="deleteKb(${realIndex})">🗑️</button>
+                    </div>
+                </div>`;
+            }).join('') || '<p style="color:#999;">Nenhum registro na base de conhecimento ainda.</p>';
+        }
+
+        let editingKbIndex = -1;
+
+        function openKbModal() {
+            editingKbIndex = -1;
+            document.getElementById('kbModalTitle').textContent = 'Novo Registro';
+            document.getElementById('kbForm').reset();
+            document.getElementById('kbModal').style.display = 'block';
+        }
+
+        function closeKbModal() {
+            document.getElementById('kbModal').style.display = 'none';
+        }
+
+        function editKb(index) {
+            editingKbIndex = index;
+            const k = kb[index];
+            document.getElementById('kbModalTitle').textContent = 'Editar Registro';
+            document.getElementById('kbTitulo').value = k.titulo;
+            document.getElementById('kbCategoria').value = k.categoria || '';
+            document.getElementById('kbConteudo').value = k.conteudo;
+            document.getElementById('kbModal').style.display = 'block';
+        }
+
+        function deleteKb(index) {
+            if (confirm('Excluir este registro da base de conhecimento?')) {
+                kb.splice(index, 1);
+                saveKb();
+                renderKb();
+            }
+        }
 
         // Funções de edição inline
         function editStatus(index) {
@@ -862,6 +1348,7 @@
 
         function saveInlineEdit(index, field, newValue) {
             procedimentos[index][field] = newValue;
+            saveProcedimentos();
             showAlert(`✅ ${field.toUpperCase()} atualizado com sucesso!`);
             renderTable();
         }
@@ -891,6 +1378,7 @@
             const searchTerm = document.getElementById('searchBox').value.toLowerCase();
             const tipoFilter = document.getElementById('tipoFilter').value;
             const delegaciaFilter = document.getElementById('delegaciaFilter').value.toLowerCase();
+            const operacaoFilter = document.getElementById('operacaoFilter').checked;
 
             let filteredProcedimentos = procedimentos.filter(p => {
                 const matchesSearch = p.numeroCaso.toLowerCase().includes(searchTerm) ||
@@ -899,10 +1387,11 @@
                                     p.codinome.toLowerCase().includes(searchTerm) ||
                                     p.materia.toLowerCase().includes(searchTerm) ||
                                     p.escrivao.toLowerCase().includes(searchTerm);
-                
+
                 const matchesTipo = !tipoFilter || p.tipo === tipoFilter;
                 const matchesDelegacia = !delegaciaFilter || p.delegacia.toLowerCase().includes(delegaciaFilter);
-                
+                const matchesOperacao = !operacaoFilter || p.operacaoPolicial;
+
                 // Filtro por aba
                 if (currentTab !== 'todos') {
                     const statusMap = {
@@ -915,10 +1404,10 @@
                         'distribuido': 'DISTRIBUÍDO'
                     };
                     const matchesTab = p.status === statusMap[currentTab];
-                    return matchesSearch && matchesTipo && matchesDelegacia && matchesTab;
+                    return matchesSearch && matchesTipo && matchesDelegacia && matchesOperacao && matchesTab;
                 }
 
-                return matchesSearch && matchesTipo && matchesDelegacia;
+                return matchesSearch && matchesTipo && matchesDelegacia && matchesOperacao;
             });
 
             tbody.innerHTML = filteredProcedimentos.map((proc) => {
@@ -954,30 +1443,26 @@
                         </td>
                         <td>${proc.materia}</td>
                         <td>
-                            <span class="editable" 
-                                  onclick="editField(${realIndex}, 'codinome')" 
-                                  data-field="codinome" 
+                            <span class="editable"
+                                  onclick="editField(${realIndex}, 'codinome')"
+                                  data-field="codinome"
                                   data-index="${realIndex}">
                                 ${proc.codinome}
                             </span>
+                            ${proc.operacaoPolicial ? '<br><span class="badge-op">🚨 OPERAÇÃO</span>' : ''}
                         </td>
+                        <td>${formatPrazoCell(proc)}</td>
+                        <td>${formatDiasSemDespachoCell(proc)}</td>
                         <td>
-                            <span class="editable" 
-                                  onclick="editField(${realIndex}, 'despacho')" 
-                                  data-field="despacho" 
-                                  data-index="${realIndex}">
-                                ${proc.despacho || '-'}
-                            </span>
-                        </td>
-                        <td>
-                            <span class="editable" 
-                                  onclick="editField(${realIndex}, 'escrivao')" 
-                                  data-field="escrivao" 
+                            <span class="editable"
+                                  onclick="editField(${realIndex}, 'escrivao')"
+                                  data-field="escrivao"
                                   data-index="${realIndex}">
                                 ${proc.escrivao}
                             </span>
                         </td>
                         <td>
+                            <button class="btn-ws" onclick="openWorkspace(${realIndex})" title="Abrir / trabalhar no procedimento">📂 Abrir</button>
                             <button class="btn-edit" onclick="editProcedimento(${realIndex})">✏️</button>
                             <button class="btn-delete" onclick="deleteProcedimento(${realIndex})">🗑️</button>
                         </td>
@@ -986,6 +1471,26 @@
             }).join('');
 
             updateStats();
+        }
+
+        function formatPrazoCell(proc) {
+            if (!proc.prazo) return '<span style="color:#999;">-</span>';
+            const d = diasParaPrazo(proc);
+            const dataFmt = proc.prazo.split('-').reverse().join('/');
+            let cls = 'prazo-ok';
+            if (d < 0) cls = 'prazo-vencido';
+            else if (d <= 5) cls = 'prazo-alerta';
+            const texto = d < 0 ? `${Math.abs(d)}d vencido` : `${d}d restantes`;
+            return `<span class="${cls}">${dataFmt}<br>(${texto})</span>`;
+        }
+
+        function formatDiasSemDespachoCell(proc) {
+            const d = diasSemDespacho(proc);
+            if (d === null) return '<span style="color:#999;">s/ registro</span>';
+            let cls = 'dias-ok';
+            if (d >= 30) cls = 'dias-critico';
+            else if (d >= 15) cls = 'dias-alerta';
+            return `<span class="dias-badge ${cls}">${d} dias</span>`;
         }
 
         // Função para obter classe de status
@@ -1055,13 +1560,18 @@
             document.getElementById('codinome').value = proc.codinome;
             document.getElementById('despacho').value = proc.despacho;
             document.getElementById('escrivao').value = proc.escrivao;
-            
+            document.getElementById('prazo').value = proc.prazo || '';
+            document.getElementById('dataUltimoDespacho').value = proc.dataUltimoDespacho || '';
+            document.getElementById('operacaoPolicial').checked = !!proc.operacaoPolicial;
+            document.getElementById('resumo').value = proc.resumo || '';
+
             document.getElementById('modal').style.display = 'block';
         }
 
         function deleteProcedimento(index) {
             if (confirm('Tem certeza que deseja excluir este procedimento?')) {
                 procedimentos.splice(index, 1);
+                saveProcedimentos();
                 showAlert('✅ Procedimento excluído com sucesso!');
                 renderTable();
             }
@@ -1083,10 +1593,11 @@
                 
                 // Preparar os dados para exportação
                 const wsData = [
-                    ['ANO', 'STATUS', 'TIPO', 'N° do Caso', 'PJE', 'DELEGACIA', 'MATÉRIA', 'CODINOME', 'DESPACHO', 'ESCRIVÃO']
+                    ['ANO', 'STATUS', 'TIPO', 'N° do Caso', 'PJE', 'DELEGACIA', 'MATÉRIA', 'CODINOME', 'OPERAÇÃO POLICIAL', 'PRAZO', 'ÚLTIMO DESPACHO', 'DIAS S/ DESPACHO', 'RESUMO', 'DESPACHO', 'ESCRIVÃO']
                 ];
-                
+
                 procedimentos.forEach(proc => {
+                    const dSemDespacho = diasSemDespacho(proc);
                     wsData.push([
                         proc.ano,
                         proc.status,
@@ -1096,14 +1607,19 @@
                         proc.delegacia,
                         proc.materia,
                         proc.codinome,
+                        proc.operacaoPolicial ? 'SIM' : 'NÃO',
+                        proc.prazo || '',
+                        proc.dataUltimoDespacho || '',
+                        dSemDespacho !== null ? dSemDespacho : '',
+                        proc.resumo || '',
                         proc.despacho || '',
                         proc.escrivao
                     ]);
                 });
-                
+
                 // Criar a planilha
                 const ws = XLSX.utils.aoa_to_sheet(wsData);
-                
+
                 // Ajustar largura das colunas
                 ws['!cols'] = [
                     {wch: 6},  // ANO
@@ -1114,6 +1630,11 @@
                     {wch: 20}, // DELEGACIA
                     {wch: 15}, // MATÉRIA
                     {wch: 40}, // CODINOME
+                    {wch: 14}, // OPERAÇÃO
+                    {wch: 12}, // PRAZO
+                    {wch: 14}, // ÚLTIMO DESPACHO
+                    {wch: 14}, // DIAS S/ DESPACHO
+                    {wch: 40}, // RESUMO
                     {wch: 50}, // DESPACHO
                     {wch: 12}  // ESCRIVÃO
                 ];
@@ -1254,7 +1775,14 @@
                     materia: document.getElementById('materia').value,
                     codinome: document.getElementById('codinome').value,
                     despacho: document.getElementById('despacho').value || '',
-                    escrivao: document.getElementById('escrivao').value
+                    escrivao: document.getElementById('escrivao').value,
+                    prazo: document.getElementById('prazo').value || '',
+                    dataUltimoDespacho: document.getElementById('dataUltimoDespacho').value || '',
+                    operacaoPolicial: document.getElementById('operacaoPolicial').checked,
+                    resumo: document.getElementById('resumo').value || '',
+                    diligenciasUteis: editingIndex >= 0 ? procedimentos[editingIndex].diligenciasUteis : [],
+                    diligenciasPendentes: editingIndex >= 0 ? procedimentos[editingIndex].diligenciasPendentes : [],
+                    log: editingIndex >= 0 ? procedimentos[editingIndex].log : []
                 };
 
                 if (editingIndex >= 0) {
@@ -1265,6 +1793,7 @@
                     showAlert('✅ Procedimento cadastrado com sucesso!');
                 }
 
+                saveProcedimentos();
                 closeModal();
                 renderTable();
             });
@@ -1273,7 +1802,29 @@
             document.getElementById('searchBox').addEventListener('input', renderTable);
             document.getElementById('tipoFilter').addEventListener('change', renderTable);
             document.getElementById('delegaciaFilter').addEventListener('input', renderTable);
-            
+            document.getElementById('operacaoFilter').addEventListener('change', renderTable);
+
+            // Base de Conhecimento
+            document.getElementById('kbForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const registro = {
+                    titulo: document.getElementById('kbTitulo').value,
+                    categoria: document.getElementById('kbCategoria').value || '',
+                    conteudo: document.getElementById('kbConteudo').value
+                };
+                if (editingKbIndex >= 0) {
+                    kb[editingKbIndex] = registro;
+                    showAlert('✅ Registro atualizado com sucesso!');
+                } else {
+                    kb.push(registro);
+                    showAlert('✅ Registro adicionado à base de conhecimento!');
+                }
+                saveKb();
+                closeKbModal();
+                renderKb();
+            });
+            document.getElementById('kbSearchBox').addEventListener('input', renderKb);
+
             // Verificar se XLSX está carregada
             setTimeout(() => {
                 if (typeof XLSX === 'undefined') {
